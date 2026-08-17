@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1c2340" />
+    <title>Wordoku</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <header class="masthead">
+        <p class="eyebrow">A daily word-placement puzzle</p>
+        <h1>Wordoku</h1>
+        <p id="puzzle-meta" class="puzzle-meta" aria-live="polite">Loading today’s puzzle…</p>
+      </header>
+
+      <section class="how-to" aria-labelledby="rules-title">
+        <h2 id="rules-title">Find one letter from every region</h2>
+        <p>Letters may be from any regions in any order, but no two chosen letters can share a row or column.</p>
+      </section>
+
+      <section class="game-area" aria-label="Wordoku board">
+        <div id="board" class="board" role="grid" aria-label="Puzzle letters"></div>
+        <div class="board-key">Select a letter to circle it and cross out its row, column, and region.</div>
+      </section>
+
+      <section class="guess-panel" aria-labelledby="guess-title">
+        <h2 id="guess-title">Your word</h2>
+        <form id="guess-form" novalidate>
+          <label class="sr-only" for="guess-input">Enter your word</label>
+          <input id="guess-input" name="guess" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="7" placeholder="TYPE A WORD" disabled />
+          <button id="guess-button" type="submit" disabled>Check word</button>
+        </form>
+        <button id="reset-button" class="reset-button" type="button" disabled>Reset board</button>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
