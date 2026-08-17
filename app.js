@@ -3,6 +3,7 @@
 const COLORS = ["#ffb7a5", "#f7d878", "#bde2bb", "#9edbd4", "#adc8f5", "#d6b8eb", "#f2b8d2"];
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const MAX_GENERATION_ATTEMPTS = 70;
+const PUZZLE_SIZE = 5;
 
 const elements = {
   board: document.querySelector("#board"),
@@ -60,40 +61,71 @@ function getNeighbors(row, col, size) {
     .filter(([nextRow, nextCol]) => nextRow >= 0 && nextRow < size && nextCol >= 0 && nextCol < size);
 }
 
-// Regions have deliberately uneven sizes. One small, single-line region gives players an
-// elimination foothold; the remaining cells are absorbed by the other connected regions.
+// Regions have deliberately uneven sizes. One to three small, single-line regions give
+// players elimination footholds; the remaining cells are absorbed by the other regions.
 // The seed squares remain on unique rows and columns, so the chosen word is always playable.
 function createRegions(size, rng) {
   for (let layoutAttempt = 0; layoutAttempt < 80; layoutAttempt += 1) {
     const regions = Array.from({ length: size }, () => []);
     const owner = new Map();
-    const stripeIsRow = rng() < 0.5;
-    const stripeIndex = Math.floor(rng() * size);
-    const footholdSize = 2 + Math.floor(rng() * (size - 2)); // Always 2 through n - 1.
-    const stripeStart = Math.floor(rng() * (size - footholdSize + 1));
-    const anchorIndex = Math.floor(rng() * footholdSize);
-    const stripe = [...Array(footholdSize).keys()].map((offset) => stripeIsRow
-      ? { row: stripeIndex, col: stripeStart + offset }
-      : { row: stripeStart + offset, col: stripeIndex });
-    const capacities = [footholdSize, ...Array(size - 1).fill(size)];
-    // The small foothold's missing cells make one or more other regions larger than n.
-    for (let extra = 0; extra < size - footholdSize; extra += 1) {
-      capacities[1 + Math.floor(rng() * (size - 1))] += 1;
+    const footholdCount = rng() < 0.18 ? 3 : rng() < 0.62 ? 2 : 1;
+    const lineLengths = [];
+    const anchorRows = new Set();
+    const anchorCols = new Set();
+    let failed = false;
+
+    for (let region = 0; region < footholdCount; region += 1) {
+      let placed = false;
+      for (let lineAttempt = 0; lineAttempt < 100 && !placed; lineAttempt += 1) {
+        // One-cell regions appear occasionally; other footholds contain two to four cells.
+        const lineLength = rng() < 0.16 ? 1 : 2 + Math.floor(rng() * (size - 2));
+        const stripeIsRow = rng() < 0.5;
+        const stripeIndex = Math.floor(rng() * size);
+        const stripeStart = Math.floor(rng() * (size - lineLength + 1));
+        const line = [...Array(lineLength).keys()].map((offset) => stripeIsRow
+          ? { row: stripeIndex, col: stripeStart + offset }
+          : { row: stripeStart + offset, col: stripeIndex });
+        if (line.some((square) => owner.has(cellKey(square.row, square.col)))) continue;
+        const anchor = shuffle(line, rng).find((square) => !anchorRows.has(square.row) && !anchorCols.has(square.col));
+        if (!anchor) continue;
+        regions[region].push(anchor, ...line.filter((square) => square !== anchor));
+        line.forEach((square) => owner.set(cellKey(square.row, square.col), region));
+        anchorRows.add(anchor.row);
+        anchorCols.add(anchor.col);
+        lineLengths.push(lineLength);
+        placed = true;
+      }
+      if (!placed) { failed = true; break; }
     }
-    const anchor = stripe[anchorIndex];
+    if (failed) continue;
 
-    // Put the anchor first so it receives the first target letter.
-    regions[0].push(anchor, ...stripe.filter((square) => square !== anchor));
-    stripe.forEach((square) => owner.set(cellKey(square.row, square.col), 0));
-
-    const availableRows = [...Array(size).keys()].filter((row) => row !== anchor.row);
-    const availableCols = [...Array(size).keys()].filter((col) => col !== anchor.col);
-    const rows = shuffle(availableRows, rng);
-    const cols = shuffle(availableCols, rng);
-    for (let region = 1; region < size; region += 1) {
-      const square = { row: rows[region - 1], col: cols[region - 1] };
+    const seedSquares = [];
+    function placeRemainingSeeds(region) {
+      if (region === size) return true;
+      const candidates = [];
+      for (const row of shuffle([...Array(size).keys()].filter((value) => !anchorRows.has(value)), rng)) {
+        for (const col of shuffle([...Array(size).keys()].filter((value) => !anchorCols.has(value)), rng)) {
+          if (!owner.has(cellKey(row, col))) candidates.push({ row, col });
+        }
+      }
+      for (const square of candidates) {
+        anchorRows.add(square.row); anchorCols.add(square.col); seedSquares.push(square);
+        if (placeRemainingSeeds(region + 1)) return true;
+        seedSquares.pop(); anchorRows.delete(square.row); anchorCols.delete(square.col);
+      }
+      return false;
+    }
+    if (!placeRemainingSeeds(footholdCount)) continue;
+    seedSquares.forEach((square, index) => {
+      const region = footholdCount + index;
       regions[region].push(square);
       owner.set(cellKey(square.row, square.col), region);
+    });
+
+    const capacities = [...lineLengths, ...Array(size - footholdCount).fill(size)];
+    const extraCells = (footholdCount * size) - lineLengths.reduce((total, length) => total + length, 0);
+    for (let extra = 0; extra < extraCells; extra += 1) {
+      capacities[footholdCount + Math.floor(rng() * (size - footholdCount))] += 1;
     }
 
     let stuck = false;
@@ -152,8 +184,8 @@ function enumerateSignatures(board, regions, size, requiredSignature) {
 
 function generatePuzzle(seed) {
   const rng = makeRng(seed);
-  const size = 5 + Math.floor(rng() * 3);
-  const words = dictionary.words[size];
+  const size = PUZZLE_SIZE;
+  const words = dictionary.targetWords[size];
   for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt += 1) {
     const layout = createRegions(size, rng);
     if (!layout) continue;
@@ -283,13 +315,19 @@ async function start() {
   try {
     const response = await fetch("assets/dictionary.json");
     if (!response.ok) throw new Error(`Dictionary request failed (${response.status})`);
-    const words = await response.json();
-    dictionary = { words: {}, wordSets: {}, signatures: {} };
-    for (const size of [5, 6, 7]) {
+    const payload = await response.json();
+    // Accept the previous flat asset shape too, so a stale local asset fails gracefully.
+    const words = payload.words || payload;
+    const targets = payload.targets || words;
+    dictionary = { words: {}, targetWords: {}, wordSets: {}, signatures: {} };
+    for (const size of [PUZZLE_SIZE]) {
       dictionary.words[size] = words[String(size)] || [];
+      dictionary.targetWords[size] = targets[String(size)] || [];
       dictionary.wordSets[size] = new Set(dictionary.words[size]);
       dictionary.signatures[size] = new Set(dictionary.words[size].map(signature));
-      if (!dictionary.words[size].length) throw new Error(`No ${size}-letter words were loaded`);
+      if (!dictionary.words[size].length || !dictionary.targetWords[size].length) {
+        throw new Error(`No ${size}-letter words were loaded`);
+      }
     }
     game = generatePuzzle(currentSeed());
     game.selected = new Map();
