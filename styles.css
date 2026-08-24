@@ -28,6 +28,10 @@ h1 { margin: 0; font-family: Georgia, serif; font-size: clamp(3.3rem, 12vw, 5.4r
 .how-to p { margin: .45rem 0 0; color: var(--muted); font-size: .93rem; line-height: 1.45; }
 
 .game-area { display: grid; justify-items: center; }
+.difficulty-tabs { display: flex; gap: .4rem; margin: 0 0 .8rem; }
+.difficulty-tab { min-height: auto; padding: .48rem .9rem; border: 1px solid var(--outline); color: var(--ink); background: transparent; font-size: .85rem; }
+.difficulty-tab:hover:not(:disabled) { background: #eee9df; }
+.difficulty-tab[aria-selected="true"] { color: white; background: var(--ink); border-color: var(--ink); }
 .board { display: grid; width: min(100%, 590px); aspect-ratio: 1; grid-template-columns: repeat(var(--grid-size), 1fr); border: 3px solid var(--ink); border-radius: 14px; overflow: hidden; background: var(--ink); gap: 2px; box-shadow: 0 10px 28px #17203c20; }
 .cell { position: relative; display: grid; place-items: center; min-width: 0; border: 0; color: var(--ink); font: inherit; font-size: clamp(1.05rem, 5.3vw, 2rem); font-weight: 900; cursor: pointer; transition: transform .12s ease, filter .12s ease; }
 .cell:hover, .cell:focus-visible { z-index: 1; outline: 3px solid var(--ink); outline-offset: -3px; filter: brightness(.96); }
@@ -45,13 +49,11 @@ h1 { margin: 0; font-family: Georgia, serif; font-size: clamp(3.3rem, 12vw, 5.4r
 .board-key span { font-size: 1.2rem; vertical-align: -.08em; }
 
 .guess-panel { max-width: 500px; margin: 2rem auto 0; text-align: center; }
-.guess-panel form { display: flex; gap: .55rem; margin-top: .7rem; }
-input, button { min-height: 3.2rem; border-radius: 10px; font: inherit; }
-input { width: 100%; border: 2px solid var(--outline); padding: 0 .9rem; color: var(--ink); background: var(--panel); font-size: 1.05rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
-input:focus { outline: 3px solid #a9c8ca; border-color: var(--ink); }
+.selection-help { margin: .45rem 0 0; color: var(--muted); font-size: .93rem; }
+button { min-height: 3.2rem; border-radius: 10px; font: inherit; }
 button { flex: 0 0 auto; border: 0; padding: 0 1.1rem; color: white; background: var(--ink); font-weight: 800; cursor: pointer; }
 button:hover:not(:disabled) { background: #29365f; }
-button:disabled, input:disabled { cursor: wait; opacity: .65; }
+button:disabled { cursor: wait; opacity: .65; }
 .status { min-height: 1.5em; margin: .75rem 0 0; font-weight: 700; }
 .status.success { color: #13715b; }
 .status.error { color: #b33e34; }
@@ -59,4 +61,4 @@ button:disabled, input:disabled { cursor: wait; opacity: .65; }
 .reset-button:hover:not(:disabled) { background: #eee9df; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
-@media (max-width: 460px) { .page-shell { width: min(100% - 1rem, 760px); padding-top: 1.8rem; } .guess-panel form { display: grid; } button { width: 100%; } }
+@media (max-width: 460px) { .page-shell { width: min(100% - 1rem, 760px); padding-top: 1.8rem; } }

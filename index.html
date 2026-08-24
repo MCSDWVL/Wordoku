@@ -17,21 +17,22 @@
 
       <section class="how-to" aria-labelledby="rules-title">
         <h2 id="rules-title">Find one letter from every region</h2>
-        <p>Letters may be from any regions in any order, but no two chosen letters can share a row or column.</p>
+        <p id="rules-copy">Letters may be from any regions in any order, but no two chosen letters can share a row or column.</p>
       </section>
 
       <section class="game-area" aria-label="Wordoku board">
+        <div class="difficulty-tabs" role="tablist" aria-label="Puzzle difficulty">
+          <button class="difficulty-tab" type="button" role="tab" data-difficulty="easy" aria-selected="true">Easy</button>
+          <button class="difficulty-tab" type="button" role="tab" data-difficulty="medium" aria-selected="false">Medium</button>
+          <button class="difficulty-tab" type="button" role="tab" data-difficulty="hard" aria-selected="false">Hard</button>
+        </div>
         <div id="board" class="board" role="grid" aria-label="Puzzle letters"></div>
         <div class="board-key">Select a letter to circle it and cross out its row, column, and region.</div>
       </section>
 
-      <section class="guess-panel" aria-labelledby="guess-title">
-        <h2 id="guess-title">Your word</h2>
-        <form id="guess-form" novalidate>
-          <label class="sr-only" for="guess-input">Enter your word</label>
-          <input id="guess-input" name="guess" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="7" placeholder="TYPE A WORD" disabled />
-          <button id="guess-button" type="submit" disabled>Check word</button>
-        </form>
+      <section class="guess-panel" aria-label="Puzzle controls">
+        <h2>Your selection</h2>
+        <p class="selection-help">Choose five letters. A valid word is submitted automatically.</p>
         <button id="reset-button" class="reset-button" type="button" disabled>Reset board</button>
         <p id="status" class="status" role="status" aria-live="polite"></p>
       </section>

@@ -2,6 +2,8 @@
 
 Wordoku is a static daily browser puzzle. Its date-based puzzle seed uses UTC; add `?seed=anything` to the URL for a repeatable test puzzle.
 
+Each day has Easy, Medium, and Hard puzzles. The difficulty tuning values are grouped at the top of `app.js`; Easy keeps the original region behavior, Medium has no one-cell regions, and Hard has no one- or two-cell regions.
+
 ## Prepare and run
 
 1. From this folder, run `powershell -ExecutionPolicy Bypass -File .\tools\build-dictionary.ps1` to create `assets/dictionary.json` from the supplied lexicon and frequency candidate data.

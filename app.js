@@ -4,13 +4,48 @@ const COLORS = ["#ffb7a5", "#f7d878", "#bde2bb", "#9edbd4", "#adc8f5", "#d6b8eb"
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const MAX_GENERATION_ATTEMPTS = 70;
 const PUZZLE_SIZE = 5;
+// Tune difficulty here. Easy deliberately mirrors the original generator settings.
+const DIFFICULTY_TUNING = {
+  easy: {
+    label: "Easy",
+    seedSuffix: "",
+    minimumRegionSize: 1,
+    singleCellChance: 0.16,
+    minimumFootholdLength: 2,
+    maximumFootholdLength: 4,
+    threeFootholdThreshold: 0.18,
+    twoFootholdThreshold: 0.62,
+    showRegionNumbers: true,
+  },
+  medium: {
+    label: "Medium",
+    seedSuffix: ":medium",
+    minimumRegionSize: 2,
+    singleCellChance: 0,
+    minimumFootholdLength: 2,
+    maximumFootholdLength: 4,
+    threeFootholdThreshold: 0.18,
+    twoFootholdThreshold: 0.62,
+    showRegionNumbers: false,
+  },
+  hard: {
+    label: "Hard",
+    seedSuffix: ":hard",
+    minimumRegionSize: 3,
+    singleCellChance: 0,
+    minimumFootholdLength: 3,
+    maximumFootholdLength: 4,
+    threeFootholdThreshold: 0.18,
+    twoFootholdThreshold: 0.62,
+    showRegionNumbers: false,
+  },
+};
 
 const elements = {
   board: document.querySelector("#board"),
   meta: document.querySelector("#puzzle-meta"),
-  form: document.querySelector("#guess-form"),
-  input: document.querySelector("#guess-input"),
-  button: document.querySelector("#guess-button"),
+  rulesCopy: document.querySelector("#rules-copy"),
+  difficultyTabs: [...document.querySelectorAll(".difficulty-tab")],
   reset: document.querySelector("#reset-button"),
   status: document.querySelector("#status"),
 };
@@ -64,11 +99,13 @@ function getNeighbors(row, col, size) {
 // Regions have deliberately uneven sizes. One to three small, single-line regions give
 // players elimination footholds; the remaining cells are absorbed by the other regions.
 // The seed squares remain on unique rows and columns, so the chosen word is always playable.
-function createRegions(size, rng) {
+function createRegions(size, rng, tuning) {
   for (let layoutAttempt = 0; layoutAttempt < 80; layoutAttempt += 1) {
     const regions = Array.from({ length: size }, () => []);
     const owner = new Map();
-    const footholdCount = rng() < 0.18 ? 3 : rng() < 0.62 ? 2 : 1;
+    const footholdCount = rng() < tuning.threeFootholdThreshold
+      ? 3
+      : rng() < tuning.twoFootholdThreshold ? 2 : 1;
     const lineLengths = [];
     const anchorRows = new Set();
     const anchorCols = new Set();
@@ -77,8 +114,12 @@ function createRegions(size, rng) {
     for (let region = 0; region < footholdCount; region += 1) {
       let placed = false;
       for (let lineAttempt = 0; lineAttempt < 100 && !placed; lineAttempt += 1) {
-        // One-cell regions appear occasionally; other footholds contain two to four cells.
-        const lineLength = rng() < 0.16 ? 1 : 2 + Math.floor(rng() * (size - 2));
+        // Easy retains its occasional one-cell footholds; harder modes raise this floor.
+        const minimumLength = Math.max(tuning.minimumRegionSize, tuning.minimumFootholdLength);
+        const lineLength = tuning.singleCellChance > 0 && rng() < tuning.singleCellChance
+          ? 1
+          : minimumLength
+            + Math.floor(rng() * (tuning.maximumFootholdLength - minimumLength + 1));
         const stripeIsRow = rng() < 0.5;
         const stripeIndex = Math.floor(rng() * size);
         const stripeStart = Math.floor(rng() * (size - lineLength + 1));
@@ -182,12 +223,13 @@ function enumerateSignatures(board, regions, size, requiredSignature) {
   return found;
 }
 
-function generatePuzzle(seed) {
+function generatePuzzle(seed, difficulty) {
   const rng = makeRng(seed);
   const size = PUZZLE_SIZE;
+  const tuning = DIFFICULTY_TUNING[difficulty];
   const words = dictionary.targetWords[size];
   for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt += 1) {
-    const layout = createRegions(size, rng);
+    const layout = createRegions(size, rng, tuning);
     if (!layout) continue;
     const word = words[Math.floor(rng() * words.length)];
     const board = Array.from({ length: size }, () => Array(size).fill(""));
@@ -200,15 +242,15 @@ function generatePuzzle(seed) {
     const matches = enumerateSignatures(board, layout.regions, size);
     const wanted = signature(word);
     if (matches.has(wanted) && matches.size === 1) {
-      return { seed, size, board, regions: layout.regions, target: word, solution: matches.get(wanted) };
+      return { seed, difficulty, size, board, regions: layout.regions, target: word, solution: matches.get(wanted) };
     }
   }
   // A deterministic fallback remains playable even if a rare seed cannot be made unique quickly.
-  const layout = createRegions(size, rng);
+  const layout = createRegions(size, rng, tuning);
   const word = words[Math.floor(rng() * words.length)];
   const board = Array.from({ length: size }, () => Array(size).fill("A"));
   layout.anchors.forEach((square, region) => { board[square.row][square.col] = word[region]; });
-  return { seed, size, board, regions: layout.regions, target: word, solution: layout.anchors };
+  return { seed, difficulty, size, board, regions: layout.regions, target: word, solution: layout.anchors };
 }
 
 function regionAt(row, col) {
@@ -232,7 +274,8 @@ function updateSelectionMarks() {
     button.classList.toggle("candidate", selected);
     button.classList.toggle("marked", crossedOut);
     button.setAttribute("aria-pressed", String(selected));
-    button.setAttribute("aria-label", `${game.board[square.row][square.col]}, region ${square.region + 1}, row ${square.row + 1}, column ${square.col + 1}${selected ? ", selected" : crossedOut ? ", crossed out" : ""}`);
+    const regionLabel = DIFFICULTY_TUNING[game.difficulty].showRegionNumbers ? `, region ${square.region + 1}` : "";
+    button.setAttribute("aria-label", `${game.board[square.row][square.col]}${regionLabel}, row ${square.row + 1}, column ${square.col + 1}${selected ? ", selected" : crossedOut ? ", crossed out" : ""}`);
   });
 }
 
@@ -248,7 +291,9 @@ function selectSquare(row, col) {
     }
     game.selected.set(key, square);
   }
+  if (game.selected.size < game.size) setStatus("");
   updateSelectionMarks();
+  validateSelection();
 }
 
 function renderBoard() {
@@ -265,9 +310,10 @@ function renderBoard() {
       button.dataset.col = col;
       button.dataset.region = region;
       button.setAttribute("role", "gridcell");
-      button.setAttribute("aria-label", `${game.board[row][col]}, region ${region + 1}, row ${row + 1}, column ${col + 1}`);
+      const regionLabel = DIFFICULTY_TUNING[game.difficulty].showRegionNumbers ? `, region ${region + 1}` : "";
+      button.setAttribute("aria-label", `${game.board[row][col]}${regionLabel}, row ${row + 1}, column ${col + 1}`);
       button.setAttribute("aria-pressed", "false");
-      button.innerHTML = `<span class="region-number" aria-hidden="true">${region + 1}</span><span>${game.board[row][col]}</span>`;
+      button.innerHTML = `${DIFFICULTY_TUNING[game.difficulty].showRegionNumbers ? `<span class="region-number" aria-hidden="true">${region + 1}</span>` : ""}<span>${game.board[row][col]}</span>`;
       button.addEventListener("click", () => selectSquare(row, col));
       elements.board.append(button);
     }
@@ -285,28 +331,17 @@ function showSolution(squares) {
   }
 }
 
-function validateGuess(event) {
-  event.preventDefault();
-  if (!game || game.completed) return;
-  const word = elements.input.value.trim().toUpperCase();
-  if (!/^[A-Z]+$/.test(word) || word.length !== game.size) {
-    setStatus(`Enter a ${game.size}-letter word.`, "error");
-    return;
-  }
-  if (!dictionary.wordSets[game.size].has(word)) {
-    setStatus("That word is not in the puzzle dictionary. Keep looking!", "error");
-    return;
-  }
-  const matches = enumerateSignatures(game.board, game.regions, game.size, signature(word));
-  const solution = matches.get(signature(word));
-  if (!solution) {
-    setStatus("That word cannot be made from a legal set of squares. Try again.", "error");
+function validateSelection() {
+  if (!game || game.completed || game.selected.size !== game.size) return;
+  const selectedSquares = [...game.selected.values()];
+  const selectedLetters = selectedSquares.map((square) => game.board[square.row][square.col]).join("");
+  const word = dictionary.wordsBySignature[game.size].get(signature(selectedLetters));
+  if (!word) {
+    setStatus("Those letters do not form a word in the puzzle dictionary. Try another selection.", "error");
     return;
   }
   game.completed = true;
-  showSolution(solution);
-  elements.input.disabled = true;
-  elements.button.disabled = true;
+  showSolution(selectedSquares);
   elements.reset.disabled = true;
   setStatus(`You found ${word}! Brilliant.`, "success");
 }
@@ -319,26 +354,21 @@ async function start() {
     // Accept the previous flat asset shape too, so a stale local asset fails gracefully.
     const words = payload.words || payload;
     const targets = payload.targets || words;
-    dictionary = { words: {}, targetWords: {}, wordSets: {}, signatures: {} };
+    dictionary = { words: {}, targetWords: {}, signatures: {}, wordsBySignature: {} };
     for (const size of [PUZZLE_SIZE]) {
       dictionary.words[size] = words[String(size)] || [];
       dictionary.targetWords[size] = targets[String(size)] || [];
-      dictionary.wordSets[size] = new Set(dictionary.words[size]);
       dictionary.signatures[size] = new Set(dictionary.words[size].map(signature));
+      dictionary.wordsBySignature[size] = new Map();
+      dictionary.words[size].forEach((word) => {
+        const key = signature(word);
+        if (!dictionary.wordsBySignature[size].has(key)) dictionary.wordsBySignature[size].set(key, word);
+      });
       if (!dictionary.words[size].length || !dictionary.targetWords[size].length) {
         throw new Error(`No ${size}-letter words were loaded`);
       }
     }
-    game = generatePuzzle(currentSeed());
-    game.selected = new Map();
-    renderBoard();
-    elements.meta.textContent = `${game.size} regions · ${game.size}-letter word · seed ${game.seed}`;
-    elements.input.maxLength = game.size;
-    elements.input.placeholder = `${game.size}-LETTER WORD`;
-    elements.input.disabled = false;
-    elements.button.disabled = false;
-    elements.reset.disabled = false;
-    elements.input.focus();
+    selectDifficulty("easy");
   } catch (error) {
     console.error(error);
     elements.meta.textContent = "The puzzle could not load.";
@@ -346,13 +376,32 @@ async function start() {
   }
 }
 
-elements.form.addEventListener("submit", validateGuess);
+function selectDifficulty(difficulty) {
+  const tuning = DIFFICULTY_TUNING[difficulty];
+  if (!tuning || !dictionary) return;
+  const baseSeed = currentSeed();
+  game = generatePuzzle(`${baseSeed}${tuning.seedSuffix}`, difficulty);
+  game.selected = new Map();
+  renderBoard();
+  elements.meta.textContent = `${tuning.label} · ${game.size} regions · ${game.size}-letter word · seed ${baseSeed}`;
+  elements.rulesCopy.textContent = tuning.showRegionNumbers
+    ? "Letters may be from any regions in any order, but no two chosen letters can share a row or column."
+    : "Letters may be from any colored regions in any order, but no two chosen letters can share a row or column.";
+  elements.reset.disabled = false;
+  setStatus("");
+  elements.difficultyTabs.forEach((tab) => {
+    const selected = tab.dataset.difficulty === difficulty;
+    tab.setAttribute("aria-selected", String(selected));
+  });
+}
+
+elements.difficultyTabs.forEach((tab) => {
+  tab.addEventListener("click", () => selectDifficulty(tab.dataset.difficulty));
+});
 elements.reset.addEventListener("click", () => {
   if (!game || game.completed) return;
   game.selected.clear();
-  elements.input.value = "";
   setStatus("");
   updateSelectionMarks();
-  elements.input.focus();
 });
 start();
