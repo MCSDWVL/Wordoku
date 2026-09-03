@@ -32,6 +32,8 @@ h1 { margin: 0; font-family: Georgia, serif; font-size: clamp(3.3rem, 12vw, 5.4r
 .difficulty-tab { min-height: auto; padding: .48rem .9rem; border: 1px solid var(--outline); color: var(--ink); background: transparent; font-size: .85rem; }
 .difficulty-tab:hover:not(:disabled) { background: #eee9df; }
 .difficulty-tab[aria-selected="true"] { color: white; background: var(--ink); border-color: var(--ink); }
+.multi-layout { display: grid; width: min(100%, 720px); grid-template-columns: minmax(0, 590px) minmax(140px, 1fr); align-items: start; gap: 1rem; }
+.board-column { min-width: 0; }
 .board { display: grid; width: min(100%, 590px); aspect-ratio: 1; grid-template-columns: repeat(var(--grid-size), 1fr); border: 3px solid var(--ink); border-radius: 14px; overflow: hidden; background: var(--ink); gap: 2px; box-shadow: 0 10px 28px #17203c20; }
 .cell { position: relative; display: grid; place-items: center; min-width: 0; border: 0; color: var(--ink); font: inherit; font-size: clamp(1.05rem, 5.3vw, 2rem); font-weight: 900; cursor: pointer; transition: transform .12s ease, filter .12s ease; }
 .cell:hover, .cell:focus-visible { z-index: 1; outline: 3px solid var(--ink); outline-offset: -3px; filter: brightness(.96); }
@@ -47,6 +49,10 @@ h1 { margin: 0; font-family: Georgia, serif; font-size: clamp(3.3rem, 12vw, 5.4r
 @keyframes solve-pop { 0% { transform: scale(.7); } 70% { transform: scale(1.08); } 100% { transform: scale(1); } }
 .board-key { margin-top: .7rem; color: var(--muted); font-size: .8rem; }
 .board-key span { font-size: 1.2rem; vertical-align: -.08em; }
+.found-panel { max-height: 590px; padding: .9rem; border: 1px solid var(--outline); border-radius: 12px; background: #ffffffaa; text-align: left; }
+.found-panel h2 { margin: 0; font-size: 1rem; }
+.found-count { margin: .3rem 0 .7rem; color: var(--muted); font-size: .83rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.found-words { display: grid; gap: .3rem; margin: 0; padding-left: 1.5rem; overflow: auto; font-weight: 800; }
 
 .guess-panel { max-width: 500px; margin: 2rem auto 0; text-align: center; }
 .selection-help { margin: .45rem 0 0; color: var(--muted); font-size: .93rem; }
@@ -61,4 +67,5 @@ button:disabled { cursor: wait; opacity: .65; }
 .reset-button:hover:not(:disabled) { background: #eee9df; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
-@media (max-width: 460px) { .page-shell { width: min(100% - 1rem, 760px); padding-top: 1.8rem; } }
+@media (max-width: 640px) { .multi-layout { grid-template-columns: 1fr; } .found-panel { max-height: 220px; } .found-words { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 460px) { .page-shell { width: min(100% - 1rem, 760px); padding-top: 1.8rem; } .difficulty-tabs { flex-wrap: wrap; justify-content: center; } }

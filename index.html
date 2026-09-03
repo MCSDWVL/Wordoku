@@ -25,14 +25,24 @@
           <button class="difficulty-tab" type="button" role="tab" data-difficulty="easy" aria-selected="true">Easy</button>
           <button class="difficulty-tab" type="button" role="tab" data-difficulty="medium" aria-selected="false">Medium</button>
           <button class="difficulty-tab" type="button" role="tab" data-difficulty="hard" aria-selected="false">Hard</button>
+          <button class="difficulty-tab" type="button" role="tab" data-difficulty="multi" aria-selected="false">Multi</button>
         </div>
-        <div id="board" class="board" role="grid" aria-label="Puzzle letters"></div>
-        <div class="board-key">Select a letter to circle it and cross out its row, column, and region.</div>
+        <div class="multi-layout">
+          <div class="board-column">
+            <div id="board" class="board" role="grid" aria-label="Puzzle letters"></div>
+            <div class="board-key">Select a letter to circle it and cross out its row, column, and region.</div>
+          </div>
+          <aside id="found-panel" class="found-panel" aria-live="polite" hidden>
+            <h2>Words found</h2>
+            <p id="found-count" class="found-count">0 found</p>
+            <ol id="found-words" class="found-words"></ol>
+          </aside>
+        </div>
       </section>
 
       <section class="guess-panel" aria-label="Puzzle controls">
         <h2>Your selection</h2>
-        <p class="selection-help">Choose five letters. A valid word is submitted automatically.</p>
+        <p id="selection-help" class="selection-help">Choose five letters. A valid word is submitted automatically.</p>
         <button id="reset-button" class="reset-button" type="button" disabled>Reset board</button>
         <p id="status" class="status" role="status" aria-live="polite"></p>
       </section>

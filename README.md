@@ -2,7 +2,7 @@
 
 Wordoku is a static daily browser puzzle. Its date-based puzzle seed uses UTC; add `?seed=anything` to the URL for a repeatable test puzzle.
 
-Each day has Easy, Medium, and Hard puzzles. The difficulty tuning values are grouped at the top of `app.js`; Easy keeps the original region behavior, Medium has no one-cell regions, and Hard has no one- or two-cell regions.
+Each day has Easy, Medium, Hard, and Multi puzzles. The difficulty tuning values are grouped at the top of `app.js`; Easy keeps the original region behavior, Medium has no one-cell regions, and Hard has no one- or two-cell regions. Multi is a 6x6 word hunt with six large regions and 8-12 familiar six-letter words; it shows found words but keeps the total hidden.
 
 ## Prepare and run
 
