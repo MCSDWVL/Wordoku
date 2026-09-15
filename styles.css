@@ -63,6 +63,7 @@ button:disabled { cursor: wait; opacity: .65; }
 .status { min-height: 1.5em; margin: .75rem 0 0; font-weight: 700; }
 .status.success { color: #13715b; }
 .status.error { color: #b33e34; }
+.alternate-words { margin: .15rem 0 0; color: var(--muted); font-size: .88rem; }
 .reset-button { min-height: auto; margin-top: .75rem; padding: .45rem .8rem; color: var(--ink); background: transparent; border: 1px solid var(--outline); font-size: .82rem; }
 .reset-button:hover:not(:disabled) { background: #eee9df; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

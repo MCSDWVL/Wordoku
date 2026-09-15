@@ -20,7 +20,7 @@ const MULTI_FALLBACK_LETTERS = "ARJSVLRIOADMREBDSBEJTRRCHHSREJALKXST";
 const elements = {
   board: document.querySelector("#board"), meta: document.querySelector("#puzzle-meta"), rulesTitle: document.querySelector("#rules-title"), rulesCopy: document.querySelector("#rules-copy"),
   difficultyTabs: [...document.querySelectorAll(".difficulty-tab")], reset: document.querySelector("#reset-button"), status: document.querySelector("#status"), selectionHelp: document.querySelector("#selection-help"),
-  foundPanel: document.querySelector("#found-panel"), foundCount: document.querySelector("#found-count"), foundWords: document.querySelector("#found-words"),
+  foundPanel: document.querySelector("#found-panel"), foundCount: document.querySelector("#found-count"), foundWords: document.querySelector("#found-words"), alternateWords: document.querySelector("#alternate-words"),
 };
 let dictionary;
 let game;
@@ -138,13 +138,14 @@ function renderBoard() {
   for (let row = 0; row < game.size; row += 1) for (let col = 0; col < game.size; col += 1) { const region = regionAt(row, col); const button = document.createElement("button"); button.type = "button"; button.className = "cell"; button.style.backgroundColor = COLORS[region]; button.dataset.row = row; button.dataset.col = col; button.dataset.region = region; button.setAttribute("role", "gridcell"); const showNumber = game.mode === "single" && DIFFICULTY_TUNING[game.difficulty].showRegionNumbers; button.setAttribute("aria-label", `${game.board[row][col]}${showNumber ? `, region ${region + 1}` : ""}, row ${row + 1}, column ${col + 1}`); button.setAttribute("aria-pressed", "false"); button.innerHTML = `${showNumber ? `<span class="region-number" aria-hidden="true">${region + 1}</span>` : ""}<span>${game.board[row][col]}</span>`; button.addEventListener("click", () => selectSquare(row, col)); elements.board.append(button); }
 }
 function setStatus(message, type = "") { elements.status.textContent = message; elements.status.className = `status ${type}`; }
+function showAlternateWords(words) { elements.alternateWords.hidden = words.length === 0; elements.alternateWords.textContent = words.length ? `Other words these letters spell: ${words.join(", ")}.` : ""; }
 function flashSolution(squares) { for (const square of squares) elements.board.querySelector(`[data-row="${square.row}"][data-col="${square.col}"]`)?.classList.add("solved"); if (game.mode === "multi") window.setTimeout(() => elements.board.querySelectorAll(".solved").forEach((cell) => cell.classList.remove("solved")), 700); }
 function updateFoundWords() { elements.foundCount.textContent = `${game.found.size} found`; elements.foundWords.replaceChildren(...[...game.found.values()].sort().map((word) => { const item = document.createElement("li"); item.textContent = word; return item; })); }
 function validateSelection() {
   if (!game || (game.mode === "single" && game.completed) || game.selected.size !== game.size) return;
   const selectedSquares = [...game.selected.values()]; const key = signature(selectedSquares.map((square) => game.board[square.row][square.col]).join(""));
   if (game.mode === "multi") { const word = dictionary.targetWordBySignature[MULTI_SIZE].get(key); if (!word) { setStatus("Those letters are not one of today's familiar words. Try another selection.", "error"); return; } if (game.found.has(key)) { game.selected.clear(); updateSelectionMarks(); setStatus(`${word} is already on your list.`, "error"); return; } game.found.set(key, word); flashSolution(selectedSquares); game.selected.clear(); updateSelectionMarks(); updateFoundWords(); setStatus(`Found ${word}! ${game.found.size} found.`, "success"); return; }
-  const word = dictionary.wordsBySignature[game.size].get(key); if (!word) { setStatus("Those letters do not form a word in the puzzle dictionary. Try another selection.", "error"); return; } const displayWord = dictionary.targetWordBySignature[game.size].get(key) || game.target || word; game.completed = true; flashSolution(selectedSquares); elements.reset.disabled = true; setStatus(`You found ${displayWord}! Brilliant.`, "success");
+  const word = dictionary.wordsBySignature[game.size].get(key); if (!word) { setStatus("Those letters do not form a word in the puzzle dictionary. Try another selection.", "error"); return; } const displayWord = dictionary.targetWordBySignature[game.size].get(key) || game.target || word; const alternatives = dictionary.words[game.size].filter((candidate) => signature(candidate) === key && candidate !== displayWord).sort(); game.completed = true; flashSolution(selectedSquares); elements.reset.disabled = true; setStatus(`You found ${displayWord}! Brilliant.`, "success"); showAlternateWords(alternatives);
 }
 async function start() {
   try {
@@ -159,7 +160,7 @@ function selectDifficulty(difficulty) {
   game = isMulti ? generateMultiPuzzle(baseSeed) : generatePuzzle(`${baseSeed}${DIFFICULTY_TUNING[difficulty].seedSuffix}`, difficulty); game.difficulty = difficulty; game.selected = new Map(); if (isMulti) game.found = new Map();
   renderBoard(); elements.meta.textContent = isMulti ? `Multi · 6 regions · six-letter words · seed ${baseSeed}` : `${DIFFICULTY_TUNING[difficulty].label} · ${game.size} regions · ${game.size}-letter word · seed ${baseSeed}`;
   elements.rulesTitle.textContent = isMulti ? "Find as many words as you can" : "Find one letter from every region"; elements.rulesCopy.textContent = "Choose one letter from each colored region. No two chosen letters can share a row or column."; elements.selectionHelp.textContent = isMulti ? "Choose six letters. Familiar words are submitted automatically." : "Choose five letters. A valid word is submitted automatically.";
-  elements.foundPanel.hidden = !isMulti; if (isMulti) updateFoundWords(); elements.reset.disabled = false; setStatus(""); elements.difficultyTabs.forEach((tab) => tab.setAttribute("aria-selected", String(tab.dataset.difficulty === difficulty)));
+  elements.foundPanel.hidden = !isMulti; if (isMulti) updateFoundWords(); elements.reset.disabled = false; setStatus(""); showAlternateWords([]); elements.difficultyTabs.forEach((tab) => tab.setAttribute("aria-selected", String(tab.dataset.difficulty === difficulty)));
 }
 elements.difficultyTabs.forEach((tab) => tab.addEventListener("click", () => selectDifficulty(tab.dataset.difficulty)));
 elements.reset.addEventListener("click", () => { if (!game || (game.mode === "single" && game.completed)) return; game.selected.clear(); setStatus(""); updateSelectionMarks(); });
