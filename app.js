@@ -144,7 +144,7 @@ function validateSelection() {
   if (!game || (game.mode === "single" && game.completed) || game.selected.size !== game.size) return;
   const selectedSquares = [...game.selected.values()]; const key = signature(selectedSquares.map((square) => game.board[square.row][square.col]).join(""));
   if (game.mode === "multi") { const word = dictionary.targetWordBySignature[MULTI_SIZE].get(key); if (!word) { setStatus("Those letters are not one of today's familiar words. Try another selection.", "error"); return; } if (game.found.has(key)) { game.selected.clear(); updateSelectionMarks(); setStatus(`${word} is already on your list.`, "error"); return; } game.found.set(key, word); flashSolution(selectedSquares); game.selected.clear(); updateSelectionMarks(); updateFoundWords(); setStatus(`Found ${word}! ${game.found.size} found.`, "success"); return; }
-  const word = dictionary.wordsBySignature[game.size].get(key); if (!word) { setStatus("Those letters do not form a word in the puzzle dictionary. Try another selection.", "error"); return; } game.completed = true; flashSolution(selectedSquares); elements.reset.disabled = true; setStatus(`You found ${word}! Brilliant.`, "success");
+  const word = dictionary.wordsBySignature[game.size].get(key); if (!word) { setStatus("Those letters do not form a word in the puzzle dictionary. Try another selection.", "error"); return; } const displayWord = dictionary.targetWordBySignature[game.size].get(key) || game.target || word; game.completed = true; flashSolution(selectedSquares); elements.reset.disabled = true; setStatus(`You found ${displayWord}! Brilliant.`, "success");
 }
 async function start() {
   try {
